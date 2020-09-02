@@ -12,22 +12,19 @@ public:
         Numeral, Ace, King, Queen, Jack
     };
 
-    Card(int value, Pip pip, Suit suit) noexcept;
-    Card(const Card&) = default;
-    Card(Card&&) = default;
-    Card& operator=(const Card& other) = default;
+    Card(int value, Suit suit, Pip pip) noexcept;
+    // SetValue sets the value of an Ace card (either 1 or 11). It returns true if the value was set.
+    bool SetValue(int new_value) noexcept;
     [[nodiscard]] Suit GetSuit() const noexcept;
     // GetValue returns the card's value.
     [[nodiscard]] int GetValue() const noexcept;
-    // SetValue sets the value of an Ace card. It is a no-op for other suits.
-    void SetValue(int new_value) noexcept;
     // operator<< writes a string representation of the card to the stream.
-    friend std::ostream& operator<<(std::ostream&, Card&);
+    friend std::ostream& operator<<(std::ostream&, Card);
 
 private:
     int value_;
-    Pip pip_;
     Suit suit_;
+    Pip pip_;
 };
 
 #endif //BLACKJACK_CARD_HXX

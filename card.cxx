@@ -1,23 +1,25 @@
 #include "card.hxx"
 
-#include <string_view>
-#include <utility>
+Card::Card(int value, Suit suit, Pip pip) noexcept
+    : value_(value), suit_(suit), pip_(pip) {}
 
-Card::Card(int value, Pip pip, Suit suit) noexcept
-    : value_(value), pip_(pip), suit_(suit) {}
+bool Card::SetValue(int new_value) noexcept {
+    if (suit_ != Suit::Ace || (new_value != 1 && new_value != 11)) {
+        return false;
+    }
+    value_ = new_value;
+    return true;
+}
+
+Card::Suit Card::GetSuit() const noexcept {
+    return suit_;
+}
 
 int Card::GetValue() const noexcept {
     return value_;
 }
 
-void Card::SetValue(int new_value) noexcept {
-    if (suit_ != Suit::Ace || (new_value != 1 && new_value != 11)) {
-        return;
-    }
-    value_ = new_value;
-}
-
-std::ostream& operator<<(std::ostream& os, Card& c) {
+std::ostream& operator<<(std::ostream& os, Card c) {
     switch (c.suit_) {
     case Card::Suit::Numeral:
         os << c.GetValue();
@@ -56,8 +58,4 @@ std::ostream& operator<<(std::ostream& os, Card& c) {
         break;
     }
     return os;
-}
-
-Card::Suit Card::GetSuit() const noexcept {
-    return suit_;
 }
