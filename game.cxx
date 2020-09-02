@@ -85,7 +85,7 @@ void Game::gameplay() {
                 break;
             }
             // if the command is invalid, prompt the user to input it again.
-            std::cout << "Intentie gresita! incearca din nou: \n";
+            std::cout << "Intentie gresita! incearca din nou: ";
         }
 
         // if the user doesn't hit, stop drawing cards
