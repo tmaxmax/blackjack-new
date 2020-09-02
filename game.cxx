@@ -1,136 +1,182 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <string_view>
 
 #include "game.hxx"
+#include "card.hxx"
 #include "player.hxx"
 #include "util.hxx"
 
 Game::Game()
-    : player_(""), dealer_(), card_stack_(), dev_(std::random_device{}()) {
+    : player_(""), computer_(""), card_stack_(), dev_(std::random_device{}()) {
     std::cout << R"(BLACKJACK 21
 Bun venit la unicul joc corect din oras, unde cartile sunt amestecate aleator si nimeni nu te pacaleste!
 )" << "Spune-ne numele tau: ";
+
+    // get the player's name
     std::string name;
     std::getline(std::cin, name, '\n');
 
     player_ = Player(name);
 
+    // greet the player
     std::cout << "Salut, " << player_.GetName() << "! Jocul este pregatit, apasa ENTER cand esti gata!";
     std::cin.get();
     std::cout << '\n';
 }
 
 void Game::gameplay() {
+    // initialize command constants
     static const std::string command_hit("hit"), command_stand("stand"), command_surrender("surrender");
     std::string command;
 
-    auto show_player_cards = [&]() {
-        std::cout << "Cartile tale:\n";
-        player_.WriteCurrentCards(std::cout);
-        std::cout << "Scor (fara asi): " << player_.GetCurrentScore() << "\n\n";
-    };
-    auto clear_game = [&]() {
-        player_.ClearCards();
-        dealer_.ClearCards();
-        card_stack_.clear();
+    auto show_cards = [](const Player& p) {
+        if (p.GetName().empty()) {
+            std::cout << "Cartile computerului:\n";
+        } else {
+            std::cout << "Cartile tale:\n";
+        }
+        p.WriteCurrentCards(std::cout);
+        std::cout << "Scor: " << p.GetCurrentScore() << "\n";
     };
 
+    auto get_maximum_score = [](const Player& p, Card new_card = Card(0, Card::Suit::Numeral, Card::Pip::Clubs)) -> int {
+        auto ace_count = p.GetAceCount();
+        if (new_card.GetSuit() == Card::Suit::Ace) {
+            ace_count++;
+        }
+        auto score = p.GetCurrentScore() + static_cast<int>(ace_count) * 11 + new_card.GetValue();
+
+        while (score > 21 && ace_count > 0) {
+            score -= 10;
+            ace_count--;
+        }
+
+        return score;
+    };
+
+    // initialize the states of the players and the card stack
+    player_.Init();
+    computer_.Init();
+    card_stack_.clear();
+
+    // add 2 cards for each player, as stated by the rules
     for (int i{}; i < 2; i++) {
         player_.AddCard(getCard());
-        dealer_.AddCard(getCard());
+        computer_.AddCard(getCard());
     }
+    auto computer_must_draw{true};
 
     while (true) {
-        show_player_cards();
+        show_cards(player_);
 
-        std::cout << R"("hit", "stand" sau "surrender"? )";
+        std::cout << std::quoted(command_hit) << ", "
+                  << std::quoted(command_stand) << " sau "
+                  << std::quoted(command_surrender) << "? ";
 
+        // get the user's command
         while (true) {
             getline(std::cin, command, '\n');
             TransformToLowerCase(command);
 
+            // break on valid command
             if (command == command_hit || command == command_stand || command == command_surrender) {
                 break;
             }
-            std::cout << "Intentie gresita! incearca din nou.\n";
+            // if the command is invalid, prompt the user to input it again.
+            std::cout << "Intentie gresita! incearca din nou: \n";
         }
 
+        // if the user doesn't hit, stop drawing cards
         if (command != command_hit) {
             break;
         }
 
+        // give the player a card
         player_.AddCard(getCard());
-        std::cout << "Dealerul ia o carte...\n\n";
 
-        auto back_card = card_stack_.back();
-        auto dealer_score = dealer_.GetCurrentScore();
-        if (dealer_score + back_card.GetValue() < 21 || (back_card.GetSuit() == Card::Suit::Ace && dealer_score + 1 < 21)) {
-            dealer_.AddCard(getCard());
+        // if the computer doesn't draw cards anymore, continue.
+        if (!computer_must_draw) {
+            std::cout << '\n';
+            continue;
+        }
+        // else give the computer a card
+        std::cout << "Computerul ia o carte...\n\n";
+
+        auto maximum_score_no_card = get_maximum_score(computer_);
+        auto maximum_score_new_card = get_maximum_score(computer_, card_stack_.back());
+        if (maximum_score_new_card > maximum_score_no_card && maximum_score_new_card <= 21) {
+            computer_.AddCard(getCard());
+        } else {
+            computer_must_draw = false;
         }
     }
 
     std::cout << '\n';
 
+    // if he player surrendered, end the game earlier.
     if (command == command_surrender) {
         std::cout << "Te-ai dat batut!\n";
         player_.Surrender();
-        dealer_.Win();
-        if (dealer_.GetCurrentScore() == 21) {
-            dealer_.Blackjack();
+        computer_.Win();
+        // give a blackjack to the computer if it has 21 points.
+        if (computer_.GetCurrentScore() == 21) {
+            computer_.Blackjack();
         }
-        clear_game();
         return;
     }
 
-    if (player_.GetAceCount() > 0 && player_.GetCurrentScore() <= 21) {
-        show_player_cards();
-
+    // set the player's aces
+    show_cards(player_);
+    for (std::size_t i{}; i < player_.GetAceCount(); i++) {
         int player_ace_value;
-        do {
-            while (!(std::cin >> player_ace_value)) {
-                std::cin.clear();
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                std::cout << "Valoare invalida, incearca din nou: ";
-            }
-        } while (player_.SetAce(player_ace_value));
-        std::cout << '\n';
+        std::cout << "Introdu valoarea asului " << i + 1 << " (1 sau 11): ";
+        // read values from user until it inputs eiter 1 or 11.
+        while (!(std::cin >> player_ace_value) || !player_.SetAce(i, player_ace_value)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Valoare invalida, incearca din nou (1 sau 11): ";
+        }
+        // ignore the last newline
+        std::cin.ignore();
     }
 
-    // TODO: optimize dealer algorithm
-    auto dealer_ace_test = dealer_;
-    auto set_aces = [](Dealer& d) {
-        int ace_value;
-        do {
-            ace_value = 1;
-            auto current_score = d.GetCurrentScore();
-            if (current_score + 11 <= 21) {
+    auto set_aces = [](Player& p) {
+        for (std::size_t i{}; i < p.GetAceCount(); i++) {
+            auto ace_value = 1;
+            if (p.GetCurrentScore() + 11 <= 21) {
                 ace_value = 11;
             }
-        } while (d.SetAce(ace_value));
+            p.SetAce(i, ace_value);
+        }
     };
-    set_aces(dealer_ace_test);
-    for (auto current_score = dealer_.GetCurrentScore();; current_score = dealer_.GetCurrentScore()) {
-        if (current_score + dealer_.GetAceCount() + std::max(card_stack_.back().GetValue(), 1) <= 21) {
-            dealer_.AddCard(getCard());
+
+    while (true) {
+        auto computer_temp = computer_;
+
+        if (!computer_must_draw) {
+            break;
+        }
+
+        auto maximum_score_no_card = get_maximum_score(computer_temp);
+        auto maximum_score_new_card = get_maximum_score(computer_temp, card_stack_.back());
+        if (maximum_score_new_card <= 21 && maximum_score_new_card > maximum_score_no_card) {
+            computer_temp.AddCard(getCard());
+            computer_ = computer_temp;
         } else {
             break;
         }
     }
-    set_aces(dealer_);
-    if (dealer_ace_test.GetCurrentScore() > dealer_.GetCurrentScore()) {
-        dealer_ = dealer_ace_test;
-    }
 
-    auto dealer_score = dealer_.GetCurrentScore();
+    set_aces(computer_);
+
+    auto dealer_score = computer_.GetCurrentScore();
     auto player_score = player_.GetCurrentScore();
 
-    std::cout << "Cartile tale:\n";
-    player_.WriteCurrentCards(std::cout);
-    std::cout << "Scor: " << player_score << '\n';
-    std::cout << "Cartile dealerului:\n";
-    dealer_.WriteCurrentCards(std::cout);
-    std::cout << "Scor: " << dealer_score << "\n\n";
+    show_cards(computer_);
+
+    std::cout << '\n';
 
     if (player_score == dealer_score || (player_score > 21 && dealer_score > 21)) {
         std::cout << "Egalitate!\n\n\n";
@@ -140,12 +186,12 @@ void Game::gameplay() {
         std::cout << "Bust, " << player_.GetName() << "!\n";
         player_.Lose();
         player_.Bust();
-        dealer_.Win();
+        computer_.Win();
     }
     if (dealer_score > 21) {
         std::cout << "Bust pentru dealer!\n";
-        dealer_.Lose();
-        dealer_.Bust();
+        computer_.Lose();
+        computer_.Bust();
         player_.Win();
     }
     if (player_score == 21) {
@@ -154,21 +200,19 @@ void Game::gameplay() {
     }
     if (dealer_score == 21) {
         std::cout << "Blackjack pentru dealer!\n";
-        dealer_.Blackjack();
+        computer_.Blackjack();
     }
     if (player_score > dealer_score && player_score <= 21) {
         std::cout << "Ai castigat, " << player_.GetName() << "!\n";
         player_.Win();
-        dealer_.Lose();
+        computer_.Lose();
     }
     if (dealer_score > player_score && dealer_score <= 21) {
         std::cout << "Dealerul a castigat!\n";
-        dealer_.Win();
+        computer_.Win();
         player_.Lose();
     }
     std::cout << "\n\n";
-
-    clear_game();
 }
 
 Card Game::getCard() noexcept {
@@ -179,6 +223,7 @@ Card Game::getCard() noexcept {
 }
 
 void Game::makeStack() {
+    // if there are cards in the stack return
     if (!card_stack_.empty()) {
         return;
     }
@@ -186,26 +231,27 @@ void Game::makeStack() {
     static Card::Pip pips[] = {Card::Pip::Clubs, Card::Pip::Diamonds, Card::Pip::Hearts, Card::Pip::Spades};
     static Card::Suit suits[] = {Card::Suit::Jack, Card::Suit::Queen, Card::Suit::King, Card::Suit::Ace, Card::Suit::Numeral};
 
+    // add a card to the stack for each pip and suit
     for (auto s : suits) {
         for (auto p : pips) {
             switch (s) {
+                // add every numeral card
             case Card::Suit::Numeral:
                 for (int i = 1; i < 11; i++) {
-                    card_stack_.emplace_back(i, p, s);
+                    card_stack_.emplace_back(i, s, p);
                 }
                 break;
             case Card::Suit::Ace:
-                card_stack_.emplace_back(0, p, s);
+                card_stack_.emplace_back(0, s, p);
                 break;
-            case Card::Suit::King:
-            case Card::Suit::Queen:
-            case Card::Suit::Jack:
-                card_stack_.emplace_back(10, p, s);
+            default:
+                card_stack_.emplace_back(10, s, p);
                 break;
             }
         }
     }
 
+    // shuffle the cards
     std::shuffle(std::begin(card_stack_), std::end(card_stack_), dev_);
 }
 
@@ -231,25 +277,29 @@ Introdu o optiune: )";
         gameplay();
     }
     std::cout << '\n';
-    stats();
+    showStats();
 }
 
-void Game::stats() {
-    auto write_player_stats = [](BasePlayer& b) {
+void Game::showStats() {
+    auto write = [](std::string_view text = "") {
+        std::cout << '\n' << std::setfill(' ') << std::setw(8) << text;
+    };
+    auto write_player_stats = [](Player& b) {
         std::cout << std::setw(12) << b.GetWinCount()
                   << std::setw(12) << b.GetLossCount()
                   << std::setw(12) << b.GetBlackjackCount()
                   << std::setw(12) << b.GetBustCount()
                   << std::setw(12) << b.GetSurrenderCount();
     };
-    std::cout << "      ";
-    std::cout << std::setw(12) << "Wins"
-              << std::setw(12) << "Losses"
+    std::cout << "STATISTICI";
+    write();
+    std::cout << std::setw(12) << "Castiguri"
+              << std::setw(12) << "Pierderi"
               << std::setw(12) << "Blackjacks"
               << std::setw(12) << "Busts"
               << std::setw(12) << "Surrenders";
-    std::cout << "\nPlayer";
+    write("Tu");
     write_player_stats(player_);
-    std::cout << "\nDealer";
-    write_player_stats(dealer_);
+    write("Computer");
+    write_player_stats(computer_);
 }
