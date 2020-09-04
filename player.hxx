@@ -14,28 +14,28 @@ public:
     explicit Player(std::string);
 
     // Init initializes the player for a new game.
-    void Init();
+    auto Init() -> void;
 
-    void AddCard(Card);
+    auto AddCard(Card) -> void;
     // SetAce sets the value of the ith ace, counting from 0. It returns true if the value was successfully set.
-    bool SetAce(std::size_t, int) noexcept;
-    void Win();
-    void Lose();
-    void Blackjack();
-    void Bust();
-    void Surrender();
+    auto SetAce(std::size_t, int) noexcept -> bool;
+    auto Win() -> void;
+    auto Lose() -> void;
+    auto Blackjack() -> void;
+    auto Bust() -> void;
+    auto Surrender() -> void;
 
-    [[nodiscard]] const std::string& GetName() const noexcept;
-    [[nodiscard]] int GetCurrentScore() const noexcept;
-    [[nodiscard]] std::size_t GetAceCount() const noexcept;
+    [[nodiscard]] auto GetName() const noexcept -> const std::string&;
+    [[nodiscard]] auto GetCurrentScore() const noexcept -> int;
+    [[nodiscard]] auto GetAceCount() const noexcept -> std::size_t;
 
-    [[nodiscard]] int GetWinCount() const noexcept;
-    [[nodiscard]] int GetLossCount() const noexcept;
-    [[nodiscard]] int GetBlackjackCount() const noexcept;
-    [[nodiscard]] int GetBustCount() const noexcept;
-    [[nodiscard]] int GetSurrenderCount() const noexcept;
+    [[nodiscard]] auto GetWinCount() const noexcept -> int;
+    [[nodiscard]] auto GetLossCount() const noexcept -> int;
+    [[nodiscard]] auto GetBlackjackCount() const noexcept -> int;
+    [[nodiscard]] auto GetBustCount() const noexcept -> int;
+    [[nodiscard]] auto GetSurrenderCount() const noexcept -> int;
     // WriteCurrentCards writes a string representation of all the cards the player has in the stream.
-    void WriteCurrentCards(std::ostream&) const;
+    auto WriteCurrentCards(std::ostream&) const -> void;
 
 private:
     std::vector<Card> cards_;

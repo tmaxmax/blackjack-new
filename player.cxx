@@ -5,47 +5,47 @@
 Player::Player(std::string name)
     : cards_(), name_(std::move(name)), win_count_(), loss_count_(), blackjack_count_(), bust_count_(), surrender_count_() {}
 
-void Player::Init() {
+auto Player::Init() -> void {
     cards_.clear();
     ace_index_.clear();
 }
 
-void Player::AddCard(Card c) {
+auto Player::AddCard(Card c) -> void {
     cards_.push_back(c);
     if (c.GetSuit() == Card::Suit::Ace) {
         ace_index_.push_back(cards_.size() - 1);
     }
 }
 
-bool Player::SetAce(std::size_t i, int new_value) noexcept {
+auto Player::SetAce(std::size_t i, int new_value) noexcept -> bool {
     return cards_[ace_index_[i]].SetValue(new_value);
 }
 
-void Player::Win() {
+auto Player::Win() -> void {
     win_count_++;
 }
 
-void Player::Lose() {
+auto Player::Lose() -> void {
     loss_count_++;
 }
 
-void Player::Blackjack() {
+auto Player::Blackjack() -> void {
     blackjack_count_++;
 }
 
-void Player::Bust() {
+auto Player::Bust() -> void {
     bust_count_++;
 }
 
-void Player::Surrender() {
+auto Player::Surrender() -> void {
     surrender_count_++;
 }
 
-const std::string& Player::GetName() const noexcept {
+auto Player::GetName() const noexcept -> const std::string& {
     return name_;
 }
 
-int Player::GetCurrentScore() const noexcept {
+auto Player::GetCurrentScore() const noexcept -> int {
     int result{};
     for (const auto& c : cards_) {
         result += c.GetValue();
@@ -53,31 +53,31 @@ int Player::GetCurrentScore() const noexcept {
     return result;
 }
 
-std::size_t Player::GetAceCount() const noexcept {
+auto Player::GetAceCount() const noexcept -> std::size_t {
     return ace_index_.size();
 }
 
-int Player::GetWinCount() const noexcept {
+auto Player::GetWinCount() const noexcept -> int {
     return win_count_;
 }
 
-int Player::GetLossCount() const noexcept {
+auto Player::GetLossCount() const noexcept -> int {
     return loss_count_;
 }
 
-int Player::GetBlackjackCount() const noexcept {
+auto Player::GetBlackjackCount() const noexcept -> int {
     return blackjack_count_;
 }
 
-int Player::GetBustCount() const noexcept {
+auto Player::GetBustCount() const noexcept -> int {
     return bust_count_;
 }
 
-int Player::GetSurrenderCount() const noexcept {
+auto Player::GetSurrenderCount() const noexcept -> int {
     return surrender_count_;
 }
 
-void Player::WriteCurrentCards(std::ostream& os) const {
+auto Player::WriteCurrentCards(std::ostream& os) const -> void {
     for (auto c : cards_) {
         os << c << '\n';
     }
