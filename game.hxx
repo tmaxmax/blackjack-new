@@ -1,8 +1,6 @@
 #ifndef BLACKJACK_GAME_HXX
 #define BLACKJACK_GAME_HXX
 
-#include <memory>
-#include <random>
 #include <vector>
 #include "player.hxx"
 
@@ -12,19 +10,20 @@ class Game {
 public:
     Game();
 
-    void Play();
+    auto Play() -> void;
 private:
-    void gameplay();
-    void showStats();
-    // getCards refills the stack if no cards are available and returns the last card in the stack;
-    [[nodiscard]] Card getCard() noexcept;
+    auto gameplay() -> void;
+    auto showStats() -> void;
     // makeStack generates a new shuffled stack of cards.
-    void makeStack();
+    auto makeStack() -> void;
+    // getCards refills the stack if no cards are available and returns the last card in the stack;
+    [[nodiscard]] auto getCard() noexcept -> Card;
 
     Player player_;
     Player computer_;
     std::vector<Card> card_stack_;
-    std::mt19937 dev_;
+    int game_count_;
+    int draw_count_;
 };
 
 #endif //BLACKJACK_GAME_HXX
