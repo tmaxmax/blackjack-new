@@ -14,13 +14,14 @@ public:
 
     Card(int value, Suit suit, Pip pip) noexcept;
     // SetValue sets the value of an Ace card (either 1 or 11). It returns true if the value was set.
-    bool SetValue(int new_value) noexcept;
-    [[nodiscard]] Suit GetSuit() const noexcept;
+    auto SetValue(int new_value) noexcept -> bool;
+    [[nodiscard]] auto GetSuit() const noexcept -> Suit;
     // GetValue returns the card's value.
-    [[nodiscard]] int GetValue() const noexcept;
+    [[nodiscard]] auto GetValue() const noexcept -> int;
     // operator<< writes a string representation of the card to the stream.
-    friend std::ostream& operator<<(std::ostream&, Card);
+    friend auto operator<<(std::ostream&, Card) -> std::ostream&;
 
+    static const Card empty;
 private:
     int value_;
     Suit suit_;

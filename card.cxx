@@ -3,7 +3,7 @@
 Card::Card(int value, Suit suit, Pip pip) noexcept
     : value_(value), suit_(suit), pip_(pip) {}
 
-bool Card::SetValue(int new_value) noexcept {
+auto Card::SetValue(int new_value) noexcept -> bool {
     if (suit_ != Suit::Ace || (new_value != 1 && new_value != 11)) {
         return false;
     }
@@ -11,15 +11,15 @@ bool Card::SetValue(int new_value) noexcept {
     return true;
 }
 
-Card::Suit Card::GetSuit() const noexcept {
+auto Card::GetSuit() const noexcept -> Card::Suit {
     return suit_;
 }
 
-int Card::GetValue() const noexcept {
+auto Card::GetValue() const noexcept -> int {
     return value_;
 }
 
-std::ostream& operator<<(std::ostream& os, Card c) {
+auto operator<<(std::ostream& os, Card c) -> std::ostream& {
     switch (c.suit_) {
     case Card::Suit::Numeral:
         os << c.GetValue();
@@ -59,3 +59,5 @@ std::ostream& operator<<(std::ostream& os, Card c) {
     }
     return os;
 }
+
+const Card Card::empty(0, Card::Suit::Numeral, Card::Pip::Clubs);
