@@ -1,14 +1,11 @@
+#include "game.hxx"
+#include "util.hxx"
+
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <string_view>
 
-#include "game.hxx"
-#include "card.hxx"
-#include "player.hxx"
-#include "util.hxx"
-
-// TODO: Add cross-platform console clear
 // TODO: Add colored output
 
 Game::Game()
@@ -67,15 +64,15 @@ auto Game::gameplay() -> void {
         Hit, Stand, Surrender
     };
     auto draw_card = [&](Player& p) -> Action {
-        // add a bust possibility every ~10 games
-        static std::bernoulli_distribution dist(0.1);
+        // add a bust possibility
+        static std::bernoulli_distribution dist(0.2);
         const auto min_score = get_minimum_score(p);
         const auto min_score_new_card = get_minimum_score(p, card_stack_.back());
         const auto max_score = get_maximum_score(p);
         const auto max_score_new_card = get_maximum_score(p, card_stack_.back());
         const auto should_draw = (max_score_new_card <= 21 && max_score_new_card > max_score) ||
                                  (min_score_new_card <= 21 && min_score_new_card > min_score) ||
-                                 (dist(dev_) && max_score != 21 && min_score != 21);
+                                 (dist(dev_) && max_score <= 16 && min_score <= 16);
         if (should_draw) {
             p.AddCard(getCard());
             if (p.GetCurrentScore() > 21 && dist(dev_)) {
@@ -94,7 +91,7 @@ auto Game::gameplay() -> void {
         }
         p.WriteCurrentCards(std::cout);
         const auto current_score = p.GetCurrentScore();
-        std::cout << "Scor: " << current_score;
+        std::cout << "\nScor: " << current_score;
         if (show_maximum) {
             const auto maximum_score = get_maximum_score(p);
             if (maximum_score != current_score) {
@@ -175,6 +172,7 @@ auto Game::gameplay() -> void {
         }
     };
 
+    // draw additional cards for the computer
     while (true) {
         auto computer_temp = computer_;
         last_computer_action = draw_card(computer_temp);
@@ -188,8 +186,8 @@ auto Game::gameplay() -> void {
     set_aces(player_);
     set_aces(computer_);
 
-    auto computer_score = computer_.GetCurrentScore();
-    auto player_score = player_.GetCurrentScore();
+    const auto computer_score = computer_.GetCurrentScore();
+    const auto player_score = player_.GetCurrentScore();
 
     util::ClearConsole();
     show_cards(player_, false);
@@ -198,9 +196,19 @@ auto Game::gameplay() -> void {
 
     std::cout << '\n';
 
-    if (player_score == computer_score) {
+    if (player_score == computer_score || (player_score > 21 && computer_score > 21)) {
         std::cout << "Egalitate!\n";
         draw_count_++;
+        if (player_score == 21) {
+            std::cout << "Amandoi aveti blackjack!\n";
+            player_.Blackjack();
+            computer_.Blackjack();
+        } else if (player_score > 21) {
+            std::cout << "Bust amandurora!\n";
+            player_.Bust();
+            computer_.Bust();
+        }
+        return;
     }
     if (player_score > 21) {
         std::cout << "Bust, " << player_.GetName() << "!\n";
@@ -220,14 +228,14 @@ auto Game::gameplay() -> void {
         std::cout << "Blackjack pentru computer!\n";
         computer_.Blackjack();
     }
-    if ((player_score > computer_score && player_score <= 21) || computer_score > 21) {
+    if ((player_score > computer_score || computer_score > 21) && player_score <= 21) {
         std::cout << "Ai castigat, " << player_.GetName() << "!\n";
         player_.Win();
         if (computer_score < 21) {
             computer_.Lose();
         }
     }
-    if ((computer_score > player_score && computer_score <= 21) || player_score > 21) {
+    if ((computer_score > player_score || player_score > 21) && computer_score <= 21) {
         std::cout << "Computerul a castigat!\n";
         computer_.Win();
         if (player_score < 21) {
@@ -249,8 +257,8 @@ auto Game::makeStack() -> void {
         return;
     }
 
-    static Card::Pip pips[] = {Card::Pip::Clubs, Card::Pip::Diamonds, Card::Pip::Hearts, Card::Pip::Spades};
-    static Card::Suit suits[] = {Card::Suit::Jack, Card::Suit::Queen, Card::Suit::King, Card::Suit::Ace, Card::Suit::Numeral};
+    static const Card::Pip pips[] = {Card::Pip::Clubs, Card::Pip::Diamonds, Card::Pip::Hearts, Card::Pip::Spades};
+    static const Card::Suit suits[] = {Card::Suit::Jack, Card::Suit::Queen, Card::Suit::King, Card::Suit::Ace, Card::Suit::Numeral};
 
     // add a card to the stack for each pip and suit
     for (auto s : suits) {
@@ -258,7 +266,7 @@ auto Game::makeStack() -> void {
             switch (s) {
                 // add every numeral card
             case Card::Suit::Numeral:
-                for (int i = 2; i < 11; i++) {
+                for (auto i{2}; i <= 10; i++) {
                     card_stack_.emplace_back(i, s, p);
                 }
                 break;
@@ -312,7 +320,7 @@ auto Game::showStats() -> void {
     auto write = [](std::string_view text) {
         std::cout << '\n' << std::setfill(' ') << std::setw(8) << text;
     };
-    auto write_player_stats = [](Player& b) {
+    auto write_player_stats = [](const Player& b) {
         std::cout << std::setw(12) << b.GetWinCount()
                   << std::setw(12) << b.GetLossCount()
                   << std::setw(12) << b.GetBlackjackCount()

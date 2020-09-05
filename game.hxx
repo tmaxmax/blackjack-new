@@ -1,11 +1,10 @@
 #ifndef BLACKJACK_GAME_HXX
 #define BLACKJACK_GAME_HXX
 
-#include <random>
-#include <vector>
 #include "player.hxx"
 
-class Card;
+#include <random>
+#include <vector>
 
 class Game {
 public:
