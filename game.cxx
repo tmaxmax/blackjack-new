@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <random>
 #include <string_view>
 
 #include "game.hxx"
@@ -13,7 +12,7 @@
 // TODO: Add colored output
 
 Game::Game()
-    : player_(""), computer_(""), card_stack_(), game_count_(), draw_count_() {
+    : player_(""), computer_(""), card_stack_(), game_count_(), draw_count_(), dev_(std::random_device{}()) {
     util::ClearConsole();
     std::cout << R"(BLACKJACK 21
 Bun venit la unicul joc corect din oras, unde cartile sunt amestecate aleator si nimeni nu te pacaleste!
@@ -28,13 +27,6 @@ Spune-ne numele tau: )";
             std::cout << "Numele tau nu poate fi gol! Incearca din nou: ";
             continue;
         }
-        if (!util::CheckNameValidity(name)) {
-            std::cout << R"(Esti sigur ca ti-ai introdus bine numele ("da" sau "nu")? )";
-            if (util::GetCommandString({"da", "nu"}) == "nu") {
-                std::cout << "Introdu-ti din nou numele: ";
-                continue;
-            }
-        }
         // if this point is reached, the name is valid
         break;
     }
@@ -42,9 +34,7 @@ Spune-ne numele tau: )";
     player_ = Player(name);
 
     // greet the player
-    std::cout << "Salut, " << player_.GetName() << "! Jocul este pregatit, apasa ENTER cand esti gata!";
-    std::cin.get();
-    util::ClearConsole();
+    std::cout << "Salut, " << player_.GetName() << "! Jocul este pregatit.\n";
 }
 
 auto Game::gameplay() -> void {
@@ -72,16 +62,31 @@ auto Game::gameplay() -> void {
         }
         return p.GetCurrentScore() + static_cast<int>(ace_count) * 1 + new_card.GetValue();
     };
-    auto should_draw = [&get_minimum_score, &get_maximum_score](const Player& p, Card new_card) {
+
+    enum class Action {
+        Hit, Stand, Surrender
+    };
+    auto draw_card = [&](Player& p) -> Action {
+        // add a bust possibility every ~10 games
+        static std::bernoulli_distribution dist(0.1);
         const auto min_score = get_minimum_score(p);
-        const auto min_score_new_card = get_minimum_score(p, new_card);
+        const auto min_score_new_card = get_minimum_score(p, card_stack_.back());
         const auto max_score = get_maximum_score(p);
-        const auto max_score_new_card = get_maximum_score(p, new_card);
-        return (max_score_new_card <= 21 && max_score_new_card > max_score) ||
-               (min_score_new_card <= 21 && min_score_new_card > min_score);
+        const auto max_score_new_card = get_maximum_score(p, card_stack_.back());
+        const auto should_draw = (max_score_new_card <= 21 && max_score_new_card > max_score) ||
+                                 (min_score_new_card <= 21 && min_score_new_card > min_score) ||
+                                 (dist(dev_) && max_score != 21 && min_score != 21);
+        if (should_draw) {
+            p.AddCard(getCard());
+            if (p.GetCurrentScore() > 21 && dist(dev_)) {
+                return Action::Surrender;
+            }
+            return Action::Hit;
+        }
+        return Action::Stand;
     };
 
-    auto show_cards = [&get_maximum_score](const Player& p, const bool show_maximum = false) {
+    auto show_cards = [&get_maximum_score](const Player& p, const bool show_maximum) {
         if (p.GetName().empty()) {
             std::cout << "Cartile computerului:\n";
         } else {
@@ -109,7 +114,7 @@ auto Game::gameplay() -> void {
         player_.AddCard(getCard());
         computer_.AddCard(getCard());
     }
-    auto computer_must_draw{true};
+    auto last_computer_action{Action::Hit};
 
     std::string command;
     while (true) {
@@ -117,12 +122,12 @@ auto Game::gameplay() -> void {
 
         show_cards(player_, true);
 
-        std::cout << std::quoted(command_hit) << ", "
-                  << std::quoted(command_stand) << " sau "
-                  << std::quoted(command_surrender) << "? ";
+        std::cout << R"("hit" (h), "stand" (s) sau "surrender" (surr)? )";
 
         // get the user's command
-        command = util::GetCommandString({command_hit, command_stand, command_surrender});
+        command = util::GetCommandString({{command_hit,       "h"},
+                                          {command_stand,     "s"},
+                                          {command_surrender, "surr"}});
 
         // if the user doesn't hit, stop drawing cards
         if (command != command_hit) {
@@ -134,99 +139,78 @@ auto Game::gameplay() -> void {
 
         std::cout << '\n';
         // if the computer doesn't draw cards anymore, continue.
-        if (!computer_must_draw) {
+        if (last_computer_action != Action::Hit) {
             continue;
         }
 
-        if (should_draw(computer_, card_stack_.back())) {
-            computer_.AddCard(getCard());
-        } else {
-            computer_must_draw = false;
-        }
+        last_computer_action = draw_card(computer_);
     }
 
-   util::ClearConsole();
+    util::ClearConsole();
 
     // if he player surrendered, end the game earlier.
     if (command == command_surrender) {
         std::cout << "Te-ai dat batut!\n";
         player_.Surrender();
+        player_.Lose();
         computer_.Win();
-        // give a blackjack to the computer if it has 21 points.
+
         if (computer_.GetCurrentScore() == 21) {
+            // give a blackjack to the computer if it has 21 points.
             computer_.Blackjack();
         }
         return;
     }
 
-    // set the player's aces
-    show_cards(player_, true);
-    for (std::size_t i{}; i < player_.GetAceCount(); i++) {
-        int player_ace_value;
-        std::cout << "Introdu valoarea asului " << i + 1 << " (1 sau 11): ";
-        // read values from user until it inputs eiter 1 or 11.
-        while (!(std::cin >> player_ace_value) || !player_.SetAce(i, player_ace_value)) {
-            std::cin.clear();
-            std::cin.ignore(std::cin.rdbuf()->in_avail());
-            std::cout << "Valoare invalida, incearca din nou (1 sau 11): ";
-        }
-        // ignore the last newline
-        std::cin.ignore();
-    }
-
     auto set_aces = [](Player& p) {
-        std::size_t i{};
-        for (; i < p.GetAceCount(); i++) {
+        for (std::size_t i{}; i < p.GetAceCount(); i++) {
             auto ace_value = 1;
             if (p.GetCurrentScore() + 11 <= 21) {
                 ace_value = 11;
             }
             p.SetAce(i, ace_value);
         }
-        while (p.GetCurrentScore() > 21) {
-            p.SetAce(--i, 1);
+        for (std::size_t i{}; i < p.GetAceCount() && p.GetCurrentScore() > 21; i++) {
+            p.SetAce(i, 1);
         }
     };
 
-    while (computer_must_draw) {
+    while (true) {
         auto computer_temp = computer_;
-
-        if (should_draw(computer_temp, card_stack_.back())) {
-            computer_temp.AddCard(getCard());
+        last_computer_action = draw_card(computer_temp);
+        if (last_computer_action == Action::Hit) {
             computer_ = computer_temp;
         } else {
-            computer_must_draw = false;
+            break;
         }
     }
 
+    set_aces(player_);
     set_aces(computer_);
 
     auto computer_score = computer_.GetCurrentScore();
     auto player_score = player_.GetCurrentScore();
 
     util::ClearConsole();
-    show_cards(player_);
+    show_cards(player_, false);
     std::cout << '\n';
-    show_cards(computer_);
+    show_cards(computer_, false);
 
     std::cout << '\n';
 
-    if (player_score == computer_score || (player_score > 21 && computer_score > 21)) {
-        std::cout << "Egalitate!\n\n\n";
+    if (player_score == computer_score) {
+        std::cout << "Egalitate!\n";
         draw_count_++;
-        return;
     }
     if (player_score > 21) {
         std::cout << "Bust, " << player_.GetName() << "!\n";
         player_.Lose();
         player_.Bust();
-        computer_.Win();
     }
     if (computer_score > 21) {
         std::cout << "Bust pentru computer!\n";
         computer_.Lose();
         computer_.Bust();
-        player_.Win();
     }
     if (player_score == 21) {
         std::cout << "Blackjack, " << player_.GetName() << "!\n";
@@ -236,15 +220,19 @@ auto Game::gameplay() -> void {
         std::cout << "Blackjack pentru computer!\n";
         computer_.Blackjack();
     }
-    if (player_score > computer_score && player_score <= 21) {
+    if ((player_score > computer_score && player_score <= 21) || computer_score > 21) {
         std::cout << "Ai castigat, " << player_.GetName() << "!\n";
         player_.Win();
-        computer_.Lose();
+        if (computer_score < 21) {
+            computer_.Lose();
+        }
     }
-    if (computer_score > player_score && computer_score <= 21) {
+    if ((computer_score > player_score && computer_score <= 21) || player_score > 21) {
         std::cout << "Computerul a castigat!\n";
         computer_.Win();
-        player_.Lose();
+        if (player_score < 21) {
+            player_.Lose();
+        }
     }
 }
 
@@ -270,7 +258,7 @@ auto Game::makeStack() -> void {
             switch (s) {
                 // add every numeral card
             case Card::Suit::Numeral:
-                for (int i = 1; i < 11; i++) {
+                for (int i = 2; i < 11; i++) {
                     card_stack_.emplace_back(i, s, p);
                 }
                 break;
@@ -284,19 +272,22 @@ auto Game::makeStack() -> void {
         }
     }
 
-    static std::mt19937 dev(std::random_device{}());
     // shuffle the cards
-    std::shuffle(std::begin(card_stack_), std::end(card_stack_), dev);
+    std::shuffle(std::begin(card_stack_), std::end(card_stack_), dev_);
 }
 
 auto Game::Play() -> void {
     while (true) {
-        std::cout << R"(MENIU:
- - ("play") Joaca!
- - ("stats") Vezi statistici.
- - ("exit") Inchide jocul.
+        std::cout << R"(
+
+MENIU:
+ - (p | "play") Joaca!
+ - (s | "stats") Vezi statistici.
+ - (e | "exit") Inchide jocul.
 Introdu o optiune: )";
-        auto command = util::GetCommandString({"play", "stats", "exit"});
+        auto command = util::GetCommandString({{"play",  "p"},
+                                               {"stats", "s"},
+                                               {"exit",  "e"}});
         std::cout << '\n';
         if (command == "play") {
             gameplay();
@@ -306,7 +297,6 @@ Introdu o optiune: )";
         } else {
             break;
         }
-        std::cout << "\n\n";
     }
     std::cout << '\n';
     showStats();

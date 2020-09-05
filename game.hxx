@@ -1,6 +1,7 @@
 #ifndef BLACKJACK_GAME_HXX
 #define BLACKJACK_GAME_HXX
 
+#include <random>
 #include <vector>
 #include "player.hxx"
 
@@ -24,6 +25,7 @@ private:
     std::vector<Card> card_stack_;
     int game_count_;
     int draw_count_;
+    std::mt19937 dev_;
 };
 
 #endif //BLACKJACK_GAME_HXX
