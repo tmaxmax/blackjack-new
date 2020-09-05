@@ -1,17 +1,12 @@
 #ifndef BLACKJACK_UTIL_HXX
 #define BLACKJACK_UTIL_HXX
 
+#include <algorithm>
 #include <cctype>
 #include <initializer_list>
-#include <iomanip>
 #include <iostream>
-#include <locale>
-#include <regex>
-#include <set>
+#include <utility>
 #include <string>
-#include <string_view>
-#include <thread>
-#include <unordered_map>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -34,16 +29,8 @@ auto MakeLowercase(std::string s) -> std::string {
     return s;
 }
 
-// CheckNameValidity checks if the passed string is title cased or if words are PascalCased. Names such as "Michael Jordan" or
-// "Dimitri McDonald" are valid, but names such as "alexa stones" or "Gregor MCPhil" aren't.
-auto CheckNameValidity(std::string_view name) -> bool {
-    static std::regex checker(R"(^(?:[A-Z][a-z]+ ?)+$)");
-
-    return std::regex_match(std::begin(name), std::end(name), checker);
-}
-
 // GetCommandString prompts the user to enter a command in the console from the given pairs of long forms and short forms of the
-// given commands, matching the input either on equality or on the longest common prefix of the input and the long form.
+// given commands, matching the input either on long form, short form or long form prefix of input length equality.
 // The first string in the pair is assumed to be the long form, and the second the short one. It is also assumed that the commands
 // are lowercase and have no additional whitespace. The input is lowercased and any additional whitespace is trimmed.
 auto GetCommandString(std::initializer_list<std::pair<std::string, std::string>> commands) -> std::string {
@@ -52,34 +39,16 @@ auto GetCommandString(std::initializer_list<std::pair<std::string, std::string>>
         getline(std::cin, input, '\n');
         input = MakeLowercase(TrimWhitespace(input));
 
-        std::set<std::size_t> unique_common_prefix_lengths;
-        std::string closest_command;
-        std::size_t longest_prefix_length{}, possibility_count{};
         for (auto& [long_form, short_form] : commands) {
-            if (input == long_form || input == short_form) {
+            if (input == short_form || input == long_form) {
                 return long_form;
             }
-            std::size_t pref_len{};
-            for (; pref_len < std::min(input.size(), long_form.size()) && long_form[pref_len] == input[pref_len]; pref_len++) {}
-            if (pref_len == 0) {
-                continue;
-            }
-            possibility_count++;
-            unique_common_prefix_lengths.insert(pref_len);
-            if (pref_len > longest_prefix_length) {
-                longest_prefix_length = pref_len;
-                closest_command = long_form;
+            if (input == long_form.substr(0, input.size()) && std::size(input) > 0) {
+                std::cout << "Comanda \"" << long_form << "\" a fost selectata!\n";
+                return long_form;
             }
         }
-
-        if (possibility_count != unique_common_prefix_lengths.size() || possibility_count == 0) {
-            std::cout << "Comanda gresita, incearca din nou: ";
-            continue;
-        }
-
-        std::cout << "Comanda " << std::quoted(closest_command) << " a fost selectata.";
-
-        return closest_command;
+        std::cout << "Comanda gresita, incearca din nou: ";
     }
 }
 
