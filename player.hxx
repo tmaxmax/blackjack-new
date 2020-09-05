@@ -1,11 +1,11 @@
 #ifndef BLACKJACK_PLAYER_HXX
 #define BLACKJACK_PLAYER_HXX
 
+#include "card.hxx"
+
 #include <ostream>
 #include <string>
 #include <vector>
-
-#include "card.hxx"
 
 class Game;
 

@@ -1,6 +1,7 @@
-#include <utility>
-
 #include "player.hxx"
+
+#include <experimental/iterator>
+#include <utility>
 
 Player::Player(std::string name)
     : cards_(), name_(std::move(name)), win_count_(), loss_count_(), blackjack_count_(), bust_count_(), surrender_count_() {}
@@ -78,7 +79,5 @@ auto Player::GetSurrenderCount() const noexcept -> int {
 }
 
 auto Player::WriteCurrentCards(std::ostream& os) const -> void {
-    for (auto c : cards_) {
-        os << c << '\n';
-    }
+    std::copy(std::begin(cards_), std::end(cards_), std::experimental::make_ostream_joiner(os, '\n'));
 }
