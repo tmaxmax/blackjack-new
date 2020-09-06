@@ -4,7 +4,7 @@
 #include <utility>
 
 Player::Player(std::string name)
-    : cards_(), name_(std::move(name)), win_count_(), loss_count_(), blackjack_count_(), bust_count_(), surrender_count_() {}
+    : cards_(), name_(std::move(name)), win_count_(), loss_count_(), blackjack_count_(), bust_count_() {}
 
 auto Player::Init() -> void {
     cards_.clear();
@@ -38,10 +38,6 @@ auto Player::Bust() -> void {
     bust_count_++;
 }
 
-auto Player::Surrender() -> void {
-    surrender_count_++;
-}
-
 auto Player::GetName() const noexcept -> const std::string& {
     return name_;
 }
@@ -72,10 +68,6 @@ auto Player::GetBlackjackCount() const noexcept -> int {
 
 auto Player::GetBustCount() const noexcept -> int {
     return bust_count_;
-}
-
-auto Player::GetSurrenderCount() const noexcept -> int {
-    return surrender_count_;
 }
 
 auto Player::WriteCurrentCards(std::ostream& os) const -> void {

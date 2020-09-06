@@ -23,7 +23,6 @@ public:
     auto Lose() -> void;
     auto Blackjack() -> void;
     auto Bust() -> void;
-    auto Surrender() -> void;
 
     [[nodiscard]] auto GetName() const noexcept -> const std::string&;
     [[nodiscard]] auto GetCurrentScore() const noexcept -> int;
@@ -33,7 +32,6 @@ public:
     [[nodiscard]] auto GetLossCount() const noexcept -> int;
     [[nodiscard]] auto GetBlackjackCount() const noexcept -> int;
     [[nodiscard]] auto GetBustCount() const noexcept -> int;
-    [[nodiscard]] auto GetSurrenderCount() const noexcept -> int;
     // WriteCurrentCards writes a string representation of all the cards the player has in the stream.
     auto WriteCurrentCards(std::ostream&) const -> void;
 
@@ -45,7 +43,6 @@ private:
     int loss_count_;
     int blackjack_count_;
     int bust_count_;
-    int surrender_count_;
 };
 
 #endif //BLACKJACK_PLAYER_HXX
