@@ -9,7 +9,12 @@
 // TODO: Add colored output
 
 Game::Game()
-    : player_(""), computer_(""), card_stack_(), game_count_(), draw_count_(), dev_(std::random_device{}()) {
+    : player_("")
+    , computer_("")
+    , card_stack_()
+    , game_count_()
+    , draw_count_()
+    , dev_(std::random_device{}()) {
     util::ClearConsole();
     std::cout << R"(BLACKJACK 21
 Bun venit la unicul joc corect din oras, unde cartile sunt amestecate aleator si nimeni nu te pacaleste!
@@ -62,7 +67,8 @@ auto Game::gameplay() -> void {
     };
 
     enum class Action {
-        Hit, Stand
+        Hit,
+        Stand
     };
     auto draw_card = [&](Player& p) -> Action {
         // add a bust possibility
@@ -72,8 +78,8 @@ auto Game::gameplay() -> void {
         const auto max_score = get_maximum_score(p);
         const auto max_score_new_card = get_maximum_score(p, card_stack_.back());
         const auto should_draw = (max_score_new_card <= 21 && max_score_new_card > max_score) ||
-                                 (min_score_new_card <= 21 && min_score_new_card > min_score) ||
-                                 (dist(dev_) && max_score <= 16 && min_score <= 16);
+            (min_score_new_card <= 21 && min_score_new_card > min_score) ||
+            (dist(dev_) && max_score <= 16 && min_score <= 16);
         if (should_draw) {
             p.AddCard(getCard());
             if (p.GetCurrentScore() > 21 && dist(dev_)) {
@@ -137,8 +143,8 @@ auto Game::gameplay() -> void {
         std::cout << R"("hit" (h) sau "stand" (s)? )";
 
         // promt the user to input the command
-        command = util::GetCommandString({{command_hit,   "h", true},
-                                          {command_stand, "s"}});
+        command = util::GetCommandString({{command_hit, "h", true},
+            {command_stand, "s"}});
 
         // if the user doesn't hit, stop drawing cards
         if (command != command_hit) {
@@ -260,7 +266,7 @@ auto Game::makeStack() -> void {
 
     static const Card::Pip pips[] = {Card::Pip::Clubs, Card::Pip::Diamonds, Card::Pip::Hearts, Card::Pip::Spades};
     static const Card::Suit suits[] = {Card::Suit::Jack, Card::Suit::Queen, Card::Suit::King, Card::Suit::Ace,
-                                       Card::Suit::Numeral};
+        Card::Suit::Numeral};
 
     // add a card to the stack for each pip and suit
     for (auto s : suits) {
@@ -282,6 +288,13 @@ auto Game::makeStack() -> void {
         }
     }
 
+    constexpr auto stacks_count = 5;
+    card_stack_.reserve(card_stack_.size() * stacks_count);
+    // clone the cards for better distribution
+    for (auto i{0}; i < stacks_count; i++) {
+        std::copy(std::begin(card_stack_), std::end(card_stack_), std::back_inserter(card_stack_));
+    }
+
     // shuffle the cards
     std::shuffle(std::begin(card_stack_), std::end(card_stack_), dev_);
 }
@@ -295,9 +308,9 @@ MENIU:
  - (s | "stats") Vezi statistici.
  - (e | "exit") Inchide jocul.
 Introdu o optiune: )";
-        auto command = util::GetCommandString({{"play",  "p"},
-                                               {"stats", "s"},
-                                               {"exit",  "e"}});
+        auto command = util::GetCommandString({{"play", "p", true},
+            {"stats", "s"},
+            {"exit", "e"}});
         std::cout << '\n';
         if (command == "play") {
             gameplay();
@@ -320,7 +333,8 @@ auto Game::showStats() -> void {
     }
 
     auto write = [](std::string_view text) {
-        std::cout << '\n' << std::setfill(' ') << std::setw(8) << text;
+        std::cout << '\n'
+                  << std::setfill(' ') << std::setw(8) << text;
     };
     auto write_player_stats = [](const Player& b) {
         std::cout << std::setw(12) << b.GetWinCount()
