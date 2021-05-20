@@ -137,7 +137,7 @@ auto Game::gameplay() -> void {
         std::cout << R"("hit" (h) sau "stand" (s)? )";
 
         // promt the user to input the command
-        command = util::GetCommandString({{command_hit,   "h"},
+        command = util::GetCommandString({{command_hit,   "h", true},
                                           {command_stand, "s"}});
 
         // if the user doesn't hit, stop drawing cards

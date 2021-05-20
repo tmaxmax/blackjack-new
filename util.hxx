@@ -5,8 +5,10 @@
 #include <cctype>
 #include <initializer_list>
 #include <iostream>
-#include <utility>
+#include <tuple>
+#include <optional>
 #include <string>
+#include <string_view>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -29,21 +31,30 @@ auto MakeLowercase(std::string s) -> std::string {
     return s;
 }
 
+struct GetCommandStringInput {
+    GetCommandStringInput(std::string_view lf, std::string_view sf, std::optional<bool> ae): long_form{lf}, short_form{sf}, allow_empty{ae} {}
+    GetCommandStringInput(std::string_view lf, std::string_view sf): GetCommandStringInput(lf, sf, {}) {}
+
+    std::string_view long_form;
+    std::string_view short_form;
+    std::optional<bool> allow_empty;
+};
+
 // GetCommandString prompts the user to enter a command in the console from the given pairs of long forms and short forms of the
 // given commands, matching the input either on long form, short form or long form prefix of input length equality.
 // The first string in the pair is assumed to be the long form, and the second the short one. It is also assumed that the commands
 // are lowercase and have no additional whitespace. The input is lowercased and any additional whitespace is trimmed.
-auto GetCommandString(std::initializer_list<std::pair<std::string, std::string>> commands) -> std::string {
+auto GetCommandString(std::initializer_list<GetCommandStringInput> commands) -> std::string_view {
     std::string input;
     while (true) {
         getline(std::cin, input, '\n');
         input = MakeLowercase(TrimWhitespace(input));
 
-        for (auto& [long_form, short_form] : commands) {
+        for (auto& [long_form, short_form, allow_empty] : commands) {
             if (input == short_form || input == long_form) {
                 return long_form;
             }
-            if (input == long_form.substr(0, input.size()) && std::size(input) > 0) {
+            if ((input == long_form.substr(0, input.size()) && std::size(input) > 0) || (input.empty() && allow_empty && *allow_empty)) {
                 std::cout << "Comanda \"" << long_form << "\" a fost selectata!\n";
                 return long_form;
             }
