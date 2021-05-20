@@ -5,7 +5,6 @@
 #include <cctype>
 #include <initializer_list>
 #include <iostream>
-#include <tuple>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -25,15 +24,17 @@ auto TrimWhitespace(std::string s) -> std::string {
 }
 
 auto MakeLowercase(std::string s) -> std::string {
-    for (auto& c : s) {
-        c = static_cast<char>(static_cast<unsigned char>(c));
-    }
+    std::transform(std::begin(s), std::end(s), std::begin(s), [](unsigned char c) -> char { return std::tolower(c); });
     return s;
 }
 
 struct GetCommandStringInput {
-    GetCommandStringInput(std::string_view lf, std::string_view sf, std::optional<bool> ae): long_form{lf}, short_form{sf}, allow_empty{ae} {}
-    GetCommandStringInput(std::string_view lf, std::string_view sf): GetCommandStringInput(lf, sf, {}) {}
+    GetCommandStringInput(std::string_view lf, std::string_view sf, std::optional<bool> ae)
+        : long_form{lf}
+        , short_form{sf}
+        , allow_empty{ae} {}
+    GetCommandStringInput(std::string_view lf, std::string_view sf)
+        : GetCommandStringInput(lf, sf, {}) {}
 
     std::string_view long_form;
     std::string_view short_form;
@@ -72,27 +73,27 @@ auto ClearConsole() -> void {
     COORD homeCoords = {0, 0};
 
     hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hStdOut == INVALID_HANDLE_VALUE) return;
+    if (hStdOut == INVALID_HANDLE_VALUE)
+        return;
 
-    if (!GetConsoleScreenBufferInfo(hStdOut, &csbi)) return;
+    if (!GetConsoleScreenBufferInfo(hStdOut, &csbi))
+        return;
     cellCount = csbi.dwSize.X * csbi.dwSize.Y;
 
     if (!FillConsoleOutputCharacter(
-        hStdOut,
-        (TCHAR) ' ',
-        cellCount,
-        homeCoords,
-        &count
-    ))
+            hStdOut,
+            (TCHAR)' ',
+            cellCount,
+            homeCoords,
+            &count))
         return;
 
     if (!FillConsoleOutputAttribute(
-        hStdOut,
-        csbi.wAttributes,
-        cellCount,
-        homeCoords,
-        &count
-    ))
+            hStdOut,
+            csbi.wAttributes,
+            cellCount,
+            homeCoords,
+            &count))
         return;
 
     SetConsoleCursorPosition(hStdOut, homeCoords);
