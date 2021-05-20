@@ -3,8 +3,8 @@
   "[cpp]": {
     "editor.wordBasedSuggestions": false,
     "editor.suggest.insertMode": "replace",
-    "editor.semanticHighlighting.enabled": true,
-    "editor.formatOnSave": false
+    "editor.semanticHighlighting.enabled": true
+    // "editor.formatOnSave": false
   },
   "files.associations": {
     "*.html": "html",
