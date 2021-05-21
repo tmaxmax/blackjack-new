@@ -41,7 +41,7 @@ Spune-ne numele tau: )";
 
 auto Game::gameplay() -> void {
     // initialize command constants
-    static const std::string command_hit("hit"), command_stand("stand");
+    static const std::string command_hit("hit"), command_stand("stand"), confirmation_yes{"da"}, confirmation_no{"nu"};
 
     // use get_maximum_score and get_minimum_score only when aces are not set!
     auto get_maximum_score = [](const Player& p, Card new_card = Card::empty) {
@@ -149,6 +149,15 @@ auto Game::gameplay() -> void {
         // if the user doesn't hit, stop drawing cards
         if (command != command_hit) {
             break;
+        }
+
+        if (auto max_score = get_maximum_score(player_); max_score > 16) {
+            std::cout << R"(Esti sigur ca doresti sa mai iei o carte ("da" (d/ENTER) sau "nu" (n))? )";
+
+            const auto confirmation = util::GetCommandString({{confirmation_yes, "y", true}, {confirmation_no, "n"}});
+            if (confirmation == confirmation_no) {
+                continue;
+            }
         }
 
         // give the player a card
