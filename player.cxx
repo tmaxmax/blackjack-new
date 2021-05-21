@@ -1,6 +1,7 @@
 #include "player.hxx"
 
 #include <experimental/iterator>
+#include <numeric>
 #include <utility>
 
 Player::Player(std::string name)
@@ -43,11 +44,7 @@ auto Player::GetName() const noexcept -> const std::string& {
 }
 
 auto Player::GetCurrentScore() const noexcept -> int {
-    int result{};
-    for (const auto& c : cards_) {
-        result += c.GetValue();
-    }
-    return result;
+    return std::accumulate(std::begin(cards_), std::end(cards_), 0, [](int result, Card card) { return result + card.GetValue(); });
 }
 
 auto Player::GetAceCount() const noexcept -> std::size_t {
