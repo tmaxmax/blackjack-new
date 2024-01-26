@@ -297,7 +297,7 @@ auto Game::makeStack() -> void {
         }
     }
 
-    const auto stacks_count = 5;
+    const auto stacks_count = 6;
     const auto stack_size = card_stack_.size();
 
     card_stack_.reserve(stack_size * stacks_count);
