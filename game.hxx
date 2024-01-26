@@ -11,6 +11,8 @@ public:
     Game();
 
     auto Play() -> void;
+    auto RegisterPlayer() -> bool;
+
 private:
     auto gameplay() -> void;
     auto showStats() -> void;
@@ -27,4 +29,4 @@ private:
     std::mt19937 dev_;
 };
 
-#endif //BLACKJACK_GAME_HXX
+#endif // BLACKJACK_GAME_HXX

@@ -15,28 +15,6 @@ Game::Game()
     , game_count_()
     , draw_count_()
     , dev_(std::random_device{}()) {
-    util::ClearConsole();
-    std::cout << R"(BLACKJACK 21
-Bun venit la unicul joc corect din oras, unde cartile sunt amestecate aleator si nimeni nu te pacaleste!
-Spune-ne numele tau: )";
-
-    // get the player's name
-    std::string name;
-    while (true) {
-        std::getline(std::cin, name, '\n');
-        name = util::TrimWhitespace(name);
-        if (name.empty()) {
-            std::cout << "Numele tau nu poate fi gol! Incearca din nou: ";
-            continue;
-        }
-        // if this point is reached, the name is valid
-        break;
-    }
-
-    player_ = Player(name);
-
-    // greet the player
-    std::cout << "Salut, " << player_.GetName() << "! Jocul este pregatit.\n";
 }
 
 auto Game::gameplay() -> void {
@@ -124,8 +102,6 @@ auto Game::gameplay() -> void {
     }
     auto last_computer_action{Action::Hit};
 
-    // get the user's command
-    std::string command;
     while (true) {
         util::ClearConsole();
 
@@ -143,8 +119,12 @@ auto Game::gameplay() -> void {
         std::cout << R"("hit" (h) sau "stand" (s)? )";
 
         // promt the user to input the command
-        command = util::GetCommandString({{command_hit, "h", true},
+        const auto command = util::GetCommandString({{command_hit, "h", true},
             {command_stand, "s"}});
+
+        if (!command) {
+            return;
+        }
 
         // if the user doesn't hit, stop drawing cards
         if (command != command_hit) {
@@ -310,6 +290,36 @@ auto Game::makeStack() -> void {
     std::shuffle(std::begin(card_stack_), std::end(card_stack_), dev_);
 }
 
+auto Game::RegisterPlayer() -> bool {
+    util::ClearConsole();
+    std::cout << R"(BLACKJACK 21
+Bun venit la unicul joc corect din oras, unde cartile sunt amestecate aleator si nimeni nu te pacaleste!
+Spune-ne numele tau: )";
+
+    // get the player's name
+    std::string name;
+    while (std::getline(std::cin, name, '\n')) {
+        name = util::TrimWhitespace(name);
+        if (name.empty()) {
+            std::cout << "Numele tau nu poate fi gol! Incearca din nou: ";
+            continue;
+        }
+        // if this point is reached, the name is valid
+        break;
+    }
+
+    if (!std::cin) {
+        return false;
+    }
+
+    player_ = Player(name);
+
+    // greet the player
+    std::cout << "Salut, " << player_.GetName() << "! Jocul este pregatit.\n";
+
+    return true;
+}
+
 auto Game::Play() -> void {
     while (true) {
         std::cout << R"(
@@ -319,11 +329,13 @@ MENIU:
  - (s | "stats") Vezi statistici.
  - (e | "exit") Inchide jocul.
 Introdu o optiune: )";
-        auto command = util::GetCommandString({{"play", "p", true},
+        const auto command = util::GetCommandString({{"play", "p", true},
             {"stats", "s"},
             {"exit", "e"}});
         std::cout << '\n';
-        if (command == "play") {
+        if (!command) {
+            break;
+        } else if (command == "play") {
             gameplay();
             game_count_++;
         } else if (command == "stats") {

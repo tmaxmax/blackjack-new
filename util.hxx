@@ -45,10 +45,11 @@ struct GetCommandStringInput {
 // given commands, matching the input either on long form, short form or long form prefix of input length equality.
 // The first string in the pair is assumed to be the long form, and the second the short one. It is also assumed that the commands
 // are lowercase and have no additional whitespace. The input is lowercased and any additional whitespace is trimmed.
-inline auto GetCommandString(std::initializer_list<GetCommandStringInput> commands) -> std::string_view {
+//
+// If there is an input error or EOF is reached then a nullopt is returned.
+inline auto GetCommandString(std::initializer_list<GetCommandStringInput> commands) -> std::optional<std::string_view> {
     std::string input;
-    while (true) {
-        getline(std::cin, input, '\n');
+    while (getline(std::cin, input, '\n')) {
         input = MakeLowercase(TrimWhitespace(input));
 
         for (auto& [long_form, short_form, allow_empty] : commands) {
@@ -62,6 +63,8 @@ inline auto GetCommandString(std::initializer_list<GetCommandStringInput> comman
         }
         std::cout << "Comanda gresita, incearca din nou: ";
     }
+
+    return std::nullopt;
 }
 
 inline auto ClearConsole() -> void {

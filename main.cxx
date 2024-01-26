@@ -2,5 +2,11 @@
 
 int main() {
     Game game;
-    game.Play();
+
+    if (game.RegisterPlayer()) {
+        game.Play();
+        return 0;
+    }
+
+    return 1;
 }
