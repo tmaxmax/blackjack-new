@@ -135,7 +135,7 @@ auto Game::gameplay() -> void {
             std::cout << R"(Esti sigur ca doresti sa mai iei o carte ("da" (d/ENTER) sau "nu" (n))? )";
 
             const auto confirmation = util::GetCommandString({{confirmation_yes, "y", true}, {confirmation_no, "n"}});
-            if (confirmation == confirmation_no) {
+            if (!confirmation || confirmation == confirmation_no) {
                 continue;
             }
         }
