@@ -339,7 +339,7 @@ Introdu o optiune: )";
 auto Game::showStats() -> void {
     util::ClearConsole();
     if (game_count_ == 0) {
-        std::cout << "Nu s-a jucat niciun joc!";
+        std::cout << "Nu s-a jucat niciun joc!\n";
         return;
     }
 
