@@ -14,7 +14,7 @@
 #endif
 
 namespace util {
-auto TrimWhitespace(std::string s) -> std::string {
+inline auto TrimWhitespace(std::string s) -> std::string {
     // trim from start
     s.erase(std::begin(s), std::find_if(std::begin(s), std::end(s), [](int c) { return !std::isspace(c); }));
     // trim from end
@@ -23,7 +23,7 @@ auto TrimWhitespace(std::string s) -> std::string {
     return s;
 }
 
-auto MakeLowercase(std::string s) -> std::string {
+inline auto MakeLowercase(std::string s) -> std::string {
     std::transform(std::begin(s), std::end(s), std::begin(s), [](unsigned char c) -> char { return std::tolower(c); });
     return s;
 }
@@ -45,7 +45,7 @@ struct GetCommandStringInput {
 // given commands, matching the input either on long form, short form or long form prefix of input length equality.
 // The first string in the pair is assumed to be the long form, and the second the short one. It is also assumed that the commands
 // are lowercase and have no additional whitespace. The input is lowercased and any additional whitespace is trimmed.
-auto GetCommandString(std::initializer_list<GetCommandStringInput> commands) -> std::string_view {
+inline auto GetCommandString(std::initializer_list<GetCommandStringInput> commands) -> std::string_view {
     std::string input;
     while (true) {
         getline(std::cin, input, '\n');
@@ -64,7 +64,7 @@ auto GetCommandString(std::initializer_list<GetCommandStringInput> commands) -> 
     }
 }
 
-auto ClearConsole() -> void {
+inline auto ClearConsole() -> void {
 #ifdef _WIN32
     HANDLE hStdOut;
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -101,6 +101,6 @@ auto ClearConsole() -> void {
     std::cout << "\033[H\033[2J";
 #endif
 }
-} //namespace util
+} // namespace util
 
-#endif //BLACKJACK_UTIL_HXX
+#endif // BLACKJACK_UTIL_HXX
