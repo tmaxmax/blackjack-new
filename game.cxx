@@ -297,11 +297,13 @@ auto Game::makeStack() -> void {
         }
     }
 
-    constexpr auto stacks_count = 5;
-    card_stack_.reserve(card_stack_.size() * stacks_count);
+    const auto stacks_count = 5;
+    const auto stack_size = card_stack_.size();
+
+    card_stack_.reserve(stack_size * stacks_count);
     // clone the cards for better distribution
     for (auto i{0}; i < stacks_count; i++) {
-        std::copy(std::begin(card_stack_), std::end(card_stack_), std::back_inserter(card_stack_));
+        std::copy(std::begin(card_stack_), std::begin(card_stack_) + stack_size, std::back_inserter(card_stack_));
     }
 
     // shuffle the cards
